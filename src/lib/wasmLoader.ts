@@ -1,82 +1,102 @@
-
-import { WASI } from '@wasmer/wasi';
 import { CodeLanguage } from '@/types';
+import { LangChainService } from './langChainService';
 
-let wasmModule: WebAssembly.Module | null = null;
-let wasmInstance: WebAssembly.Instance | null = null;
-let wasi: WASI | null = null;
+// We'll use a simpler approach without WASM since it's causing errors
+let initialized = false;
+let langChainService: LangChainService | null = null;
 
-// This is a placeholder for the actual wasm loading logic
-// In a real implementation, you would load the compiled C++ code as WebAssembly
 export async function initWasm() {
   try {
-    // Initialize WASI
-    wasi = new WASI({
-      args: [],
-      env: {},
-      // WASI configuration simplified for compatibility
-    });
+    // Instead of trying to initialize WASM which is causing errors,
+    // we'll initialize our LangChain service
+    langChainService = new LangChainService();
+    await langChainService.initialize();
     
-    // Placeholder for actual wasm loading
-    console.log('WASM initialization simulation - in a real app, this would load the C++ backend');
-    
-    // For the prototype, we'll simulate successful loading
+    console.log('Code conversion engine initialized successfully');
+    initialized = true;
     return true;
   } catch (error) {
-    console.error('Failed to initialize WASM:', error);
+    console.error('Failed to initialize code conversion engine:', error);
     return false;
   }
 }
 
-// Simulate code conversion
+// Convert code using LangChain instead of WASM
 export function convertCode(
   sourceCode: string,
   sourceLanguage: string,
   targetLanguage: string,
   options: Record<string, boolean> = {}
 ): Promise<{ code: string; graphData: any }> {
-  // This is a placeholder that simulates the actual conversion
-  // In a real implementation, this would call the wasm functions
-  return new Promise((resolve) => {
-    console.log(`Simulating conversion from ${sourceLanguage} to ${targetLanguage}`);
-    
-    // Simulate processing time
-    setTimeout(() => {
-      // Generate dummy converted code based on target language
-      let convertedCode = '';
-      let graphData = { nodes: [], edges: [] };
+  return new Promise(async (resolve, reject) => {
+    try {
+      console.log(`Converting from ${sourceLanguage} to ${targetLanguage}`);
       
-      switch (targetLanguage) {
-        case 'python':
-          convertedCode = convertToPython(sourceCode, sourceLanguage);
-          break;
-        case 'javascript':
-          convertedCode = convertToJavaScript(sourceCode, sourceLanguage);
-          break;
-        case 'typescript':
-          convertedCode = convertToTypeScript(sourceCode, sourceLanguage);
-          break;
-        case 'java':
-          convertedCode = convertToJava(sourceCode, sourceLanguage);
-          break;
-        case 'cpp':
-          convertedCode = convertToCpp(sourceCode, sourceLanguage);
-          break;
-        case 'c':
-          convertedCode = convertToC(sourceCode, sourceLanguage);
-          break;
-        default:
-          convertedCode = sourceCode;
+      // If LangChain service is initialized, use it
+      if (langChainService && initialized) {
+        const startTime = performance.now();
+        
+        // Get the converted code from LangChain
+        const convertedCode = await langChainService.convertCode(
+          sourceCode,
+          sourceLanguage as CodeLanguage,
+          targetLanguage as CodeLanguage,
+          options
+        );
+        
+        // Generate graph data for visualization
+        const graphData = generateGraphData(sourceCode, sourceLanguage);
+        
+        const endTime = performance.now();
+        
+        resolve({
+          code: convertedCode,
+          graphData
+        });
+      } else {
+        // Fallback to the simulation if LangChain fails
+        // Simulate processing time
+        setTimeout(() => {
+          // Generate dummy converted code based on target language
+          let convertedCode = '';
+          let graphData = { nodes: [], edges: [] };
+          
+          switch (targetLanguage) {
+            case 'python':
+              convertedCode = convertToPython(sourceCode, sourceLanguage);
+              break;
+            case 'javascript':
+              convertedCode = convertToJavaScript(sourceCode, sourceLanguage);
+              break;
+            case 'typescript':
+              convertedCode = convertToTypeScript(sourceCode, sourceLanguage);
+              break;
+            case 'java':
+              convertedCode = convertToJava(sourceCode, sourceLanguage);
+              break;
+            case 'cpp':
+              convertedCode = convertToCpp(sourceCode, sourceLanguage);
+              break;
+            case 'c':
+              convertedCode = convertToC(sourceCode, sourceLanguage);
+              break;
+            default:
+              convertedCode = sourceCode;
+          }
+          
+          // Generate graph data based on source code
+          graphData = generateGraphData(sourceCode, sourceLanguage);
+          
+          resolve({
+            code: convertedCode,
+            graphData
+          });
+        }, 1500);
       }
-      
-      // Generate graph data based on source code
-      graphData = generateGraphData(sourceCode, sourceLanguage);
-      
-      resolve({
-        code: convertedCode,
-        graphData
-      });
-    }, 1500);
+    } catch (error) {
+      console.error('Conversion error:', error);
+      reject(error);
+    }
   });
 }
 
