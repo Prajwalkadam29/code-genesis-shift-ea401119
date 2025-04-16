@@ -87,9 +87,9 @@ const TreeVisualizer = ({ data, width = 800, height = 600 }: TreeVisualizerProps
           .attr('fill', 'none')
           .attr('stroke', '#ccc')
           .attr('stroke-width', 2)
-          .attr('d', d3.linkHorizontal()
-            .x((d: any) => d.y)
-            .y((d: any) => d.x)
+          .attr('d', d3.linkHorizontal<d3.HierarchyPointLink<unknown>, d3.HierarchyPointNode<unknown>>()
+            .x(d => d.y)
+            .y(d => d.x)
           );
         
         // Create node groups
@@ -97,7 +97,7 @@ const TreeVisualizer = ({ data, width = 800, height = 600 }: TreeVisualizerProps
           .data(treeData.descendants())
           .enter().append('g')
           .attr('class', 'node')
-          .attr('transform', (d: any) => `translate(${d.y},${d.x})`);
+          .attr('transform', d => `translate(${d.y},${d.x})`);
         
         // Add node circles
         nodes.append('circle')
@@ -109,9 +109,9 @@ const TreeVisualizer = ({ data, width = 800, height = 600 }: TreeVisualizerProps
         // Add node labels
         nodes.append('text')
           .attr('dy', '.35em')
-          .attr('x', (d: any) => d.children ? -13 : 13)
-          .attr('text-anchor', (d: any) => d.children ? 'end' : 'start')
-          .text((d: any) => {
+          .attr('x', d => d.children ? -13 : 13)
+          .attr('text-anchor', d => d.children ? 'end' : 'start')
+          .text(d => {
             // Truncate long node names
             const name = d.data.name;
             return name.length > 20 ? name.substring(0, 17) + '...' : name;
