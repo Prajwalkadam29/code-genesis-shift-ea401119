@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { GraphData } from '@/types';
 import * as d3 from 'd3';
@@ -8,6 +8,12 @@ interface TreeVisualizerProps {
   data: GraphData;
   width?: number;
   height?: number;
+}
+
+interface HierarchyNode {
+  id: string;
+  name: string;
+  children?: HierarchyNode[];
 }
 
 const TreeVisualizer = ({ data, width = 800, height = 600 }: TreeVisualizerProps) => {
@@ -34,12 +40,14 @@ const TreeVisualizer = ({ data, width = 800, height = 600 }: TreeVisualizerProps
         const rootNode = rootNodes[0];
         
         // Create a tree structure that D3 can use
-        const createHierarchy = (nodeId: string) => {
+        const createHierarchy = (nodeId: string): HierarchyNode | null => {
           const node = data.nodes.find(n => n.id === nodeId);
           if (!node) return null;
           
           const childEdges = data.edges.filter(edge => edge.source === nodeId);
-          const children = childEdges.map(edge => createHierarchy(edge.target)).filter(Boolean);
+          const children = childEdges
+            .map(edge => createHierarchy(edge.target))
+            .filter((node): node is HierarchyNode => node !== null);
           
           return {
             id: node.id,
@@ -70,7 +78,7 @@ const TreeVisualizer = ({ data, width = 800, height = 600 }: TreeVisualizerProps
           .attr('transform', `translate(${margin.left},${margin.top})`);
         
         // Create the tree layout
-        const treeLayout = d3.tree()
+        const treeLayout = d3.tree<HierarchyNode>()
           .size([innerHeight, innerWidth]);
         
         // Prepare the data
@@ -87,7 +95,7 @@ const TreeVisualizer = ({ data, width = 800, height = 600 }: TreeVisualizerProps
           .attr('fill', 'none')
           .attr('stroke', '#ccc')
           .attr('stroke-width', 2)
-          .attr('d', d3.linkHorizontal<d3.HierarchyPointLink<unknown>, d3.HierarchyPointNode<unknown>>()
+          .attr('d', d3.linkHorizontal<d3.HierarchyPointLink<HierarchyNode>, d3.HierarchyPointNode<HierarchyNode>>()
             .x(d => d.y)
             .y(d => d.x)
           );
