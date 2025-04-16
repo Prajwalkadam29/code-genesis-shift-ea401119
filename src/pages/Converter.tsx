@@ -7,12 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { toast } from "sonner";
 import { CodeLanguage, ConversionOptions, ConversionResult } from '@/types';
 import Navbar from '@/components/Navbar';
 import FileUploader from '@/components/FileUploader';
 import LanguageSelector from '@/components/LanguageSelector';
 import CodeEditor from '@/components/CodeEditor';
 import GraphVisualizer from '@/components/GraphVisualizer';
+import TreeVisualizer from '@/components/TreeVisualizer';
 import { initWasm, convertCode } from '@/lib/wasmLoader';
 
 const Converter = () => {
@@ -26,6 +28,7 @@ const Converter = () => {
   const [isConverting, setIsConverting] = useState(false);
   const [wasmInitialized, setWasmInitialized] = useState(false);
   const [activeTab, setActiveTab] = useState('code');
+  const [visualizationType, setVisualizationType] = useState<'graph' | 'tree'>('graph');
   
   useEffect(() => {
     const loadWasm = async () => {
@@ -39,6 +42,7 @@ const Converter = () => {
   const handleFileSelect = (content: string, name: string) => {
     setSourceCode(content);
     setFileName(name);
+    toast.success(`File "${name}" loaded successfully`);
     
     // Try to determine the language from the file extension
     const extension = name.split('.').pop()?.toLowerCase();
@@ -63,7 +67,7 @@ const Converter = () => {
   
   const handleConvertCode = async () => {
     if (!sourceCode.trim()) {
-      alert('Please upload or enter source code first');
+      toast.error('Please upload or enter source code first');
       return;
     }
     
@@ -91,20 +95,40 @@ const Converter = () => {
         status: 'success'
       });
       
+      toast.success('Code converted successfully!');
+      
       // Switch to the result tab
       setActiveTab('result');
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Conversion failed: ${errorMessage}`);
+      
       setConversionResult({
         originalCode: sourceCode,
         transformedCode: '',
         graphData: { nodes: [], edges: [] },
         executionTime: 0,
         status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: errorMessage
       });
     } finally {
       setIsConverting(false);
     }
+  };
+  
+  const handlePasteExample = () => {
+    const examples = {
+      'c': `#include <stdio.h>\n\nint main() {\n  printf("Hello, World!");\n  return 0;\n}`,
+      'cpp': `#include <iostream>\n\nint main() {\n  std::cout << "Hello, World!" << std::endl;\n  return 0;\n}`,
+      'javascript': `function greet() {\n  console.log("Hello, World!");\n}\n\ngreet();`,
+      'typescript': `function greet(): void {\n  console.log("Hello, World!");\n}\n\ngreet();`,
+      'python': `def greet():\n  print("Hello, World!")\n\nif __name__ == "__main__":\n  greet()`,
+      'java': `public class HelloWorld {\n  public static void main(String[] args) {\n    System.out.println("Hello, World!");\n  }\n}`
+    };
+    
+    setSourceCode(examples[sourceLanguage]);
+    setFileName(`example.${sourceLanguage === 'typescript' ? 'ts' : sourceLanguage === 'javascript' ? 'js' : sourceLanguage}`);
+    toast.success('Example code pasted');
   };
   
   return (
@@ -127,6 +151,28 @@ const Converter = () => {
                   <FileUploader 
                     onFileSelect={handleFileSelect} 
                   />
+                  
+                  <div className="flex justify-between items-center mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePasteExample}
+                    >
+                      Paste Example
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSourceCode('');
+                        setFileName('');
+                        toast.success('Code editor cleared');
+                      }}
+                    >
+                      Clear Editor
+                    </Button>
+                  </div>
                   
                   <div className="space-y-4 mt-6">
                     <LanguageSelector
@@ -208,7 +254,7 @@ const Converter = () => {
                     <div className="text-center p-6">
                       <h3 className="text-lg font-medium mb-2">No Code Yet</h3>
                       <p className="text-muted-foreground mb-4">
-                        Upload a file or paste your code to begin conversion
+                        Upload a file, paste your code, or use an example to begin conversion
                       </p>
                     </div>
                   </Card>
@@ -241,12 +287,39 @@ const Converter = () => {
                     </div>
                     
                     <div className="mt-8">
-                      <h3 className="text-lg font-medium mb-4">AST Visualization</h3>
-                      <GraphVisualizer 
-                        data={conversionResult.graphData}
-                        width={800}
-                        height={400}
-                      />
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium">Code Structure Visualization</h3>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant={visualizationType === 'graph' ? 'default' : 'outline'} 
+                            size="sm"
+                            onClick={() => setVisualizationType('graph')}
+                          >
+                            Graph View
+                          </Button>
+                          <Button 
+                            variant={visualizationType === 'tree' ? 'default' : 'outline'} 
+                            size="sm"
+                            onClick={() => setVisualizationType('tree')}
+                          >
+                            Tree View
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {visualizationType === 'graph' ? (
+                        <GraphVisualizer 
+                          data={conversionResult.graphData}
+                          width={800}
+                          height={400}
+                        />
+                      ) : (
+                        <TreeVisualizer 
+                          data={conversionResult.graphData}
+                          width={800}
+                          height={400}
+                        />
+                      )}
                     </div>
                     
                     <div className="flex justify-between items-center text-sm text-muted-foreground">

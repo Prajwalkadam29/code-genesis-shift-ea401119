@@ -2,8 +2,10 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import GraphVisualizer from '@/components/GraphVisualizer';
+import TreeVisualizer from '@/components/TreeVisualizer';
 import { GraphData } from '@/types';
 
 // Sample graph data for demonstrating various transformation patterns
@@ -55,6 +57,7 @@ const samplePatterns: Record<string, GraphData> = {
 
 const Visualizer = () => {
   const [selectedPattern, setSelectedPattern] = useState<string>('functionTransformation');
+  const [visualizationType, setVisualizationType] = useState<'graph' | 'tree'>('graph');
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -65,8 +68,24 @@ const Visualizer = () => {
         
         <div className="grid grid-cols-1 gap-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Common Transformation Patterns</CardTitle>
+              <div className="flex space-x-2">
+                <Button 
+                  variant={visualizationType === 'graph' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setVisualizationType('graph')}
+                >
+                  Graph View
+                </Button>
+                <Button 
+                  variant={visualizationType === 'tree' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setVisualizationType('tree')}
+                >
+                  Tree View
+                </Button>
+              </div>
             </CardHeader>
             
             <CardContent>
@@ -93,11 +112,19 @@ const Visualizer = () => {
                       'Class structures and object-oriented patterns are mapped to equivalent structures in the target language.'}
                   </p>
                   
-                  <GraphVisualizer 
-                    data={samplePatterns[selectedPattern]} 
-                    width={800}
-                    height={500}
-                  />
+                  {visualizationType === 'graph' ? (
+                    <GraphVisualizer 
+                      data={samplePatterns[selectedPattern]} 
+                      width={800}
+                      height={500}
+                    />
+                  ) : (
+                    <TreeVisualizer 
+                      data={samplePatterns[selectedPattern]} 
+                      width={800}
+                      height={500}
+                    />
+                  )}
                 </div>
               </Tabs>
             </CardContent>
@@ -136,11 +163,12 @@ const Visualizer = () => {
                 </div>
                 
                 <div className="mt-8 p-4 bg-muted rounded-lg">
-                  <h3 className="text-lg font-medium mb-2">Academic Research</h3>
+                  <h3 className="text-lg font-medium mb-2">Visualization Types</h3>
                   <p className="text-sm text-muted-foreground">
-                    This project implements graph-based code transformation techniques based on research in 
-                    program analysis, compiler design, and abstract interpretation. The approach enables 
-                    semantically-aware code migration across languages.
+                    <strong>Graph View:</strong> Shows code structure as an interconnected graph of nodes, useful for visualizing complex relationships and patterns in the code.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    <strong>Tree View:</strong> Displays code in a hierarchical tree structure, making it easier to understand parent-child relationships and the overall code organization.
                   </p>
                 </div>
               </div>
