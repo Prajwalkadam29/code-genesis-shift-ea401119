@@ -47,6 +47,9 @@ const TreeVisualizer = ({ data, width = 800, height = 600 }: TreeVisualizerProps
     <Card className="overflow-hidden">
       <div className="bg-muted p-3 border-b">
         <h3 className="font-medium">Tree Visualization</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Hover over nodes for details. Use mouse wheel to zoom and drag to pan.
+        </p>
       </div>
       <div 
         ref={containerRef} 
