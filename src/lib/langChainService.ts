@@ -1,15 +1,18 @@
-
-import { CodeLanguage } from '@/types';
+import { CodeLanguage, ConversionResult } from '@/types';
 
 export class LangChainService {
   private initialized: boolean = false;
+  private apiUrl: string = 'http://localhost:5000'; // Update this with your actual Python backend URL
 
   async initialize(): Promise<void> {
     try {
-      // In a real implementation, we would initialize LangChain here
-      // For now, we'll just simulate successful initialization
-      this.initialized = true;
-      console.log('LangChain service initialized');
+      // Check if the API is reachable
+      const response = await fetch(`${this.apiUrl}/convert`, {
+        method: 'HEAD'
+      }).catch(() => null);
+      
+      this.initialized = response !== null;
+      console.log(`LangChain service initialized: ${this.initialized}`);
       return Promise.resolve();
     } catch (error) {
       console.error('Failed to initialize LangChain:', error);
@@ -23,6 +26,44 @@ export class LangChainService {
     targetLanguage: CodeLanguage,
     options: Record<string, boolean> = {}
   ): Promise<string> {
+    if (!sourceCode.trim()) {
+      throw new Error('Source code cannot be empty');
+    }
+
+    try {
+      const response = await fetch(`${this.apiUrl}/convert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sourceCode,
+          sourceLanguage,
+          targetLanguage,
+          options
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to convert code');
+      }
+
+      const data: ConversionResult = await response.json();
+      
+      if (data.status === 'error') {
+        throw new Error(data.error || 'Unknown error occurred');
+      }
+
+      return data.transformedCode;
+    } catch (error) {
+      console.error('Code conversion error:', error);
+      throw error;
+    }
+  }
+
+  // For fallback when the Python API is not available
+  fallbackConvert(sourceCode: string, sourceLanguage: CodeLanguage, targetLanguage: CodeLanguage): string {
     if (!this.initialized) {
       throw new Error('LangChain service not initialized');
     }
