@@ -7,6 +7,8 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 import os
 import re
+import ast
+import json
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -40,17 +42,122 @@ def generate_conversion_prompt(source_language, target_language):
         template=template,
     )
 
+class AstNodeVisitor(ast.NodeVisitor):
+    """Visit AST nodes and generate a structured representation."""
+    
+    def __init__(self):
+        self.nodes = []
+        self.edges = []
+        self.node_index = 0
+        self.parent_stack = ["n0"]  # Start with root node
+        
+        # Create root node
+        self.nodes.append({
+            "id": "n0",
+            "type": "Program",
+            "value": "Program",
+            "children": []
+        })
+    
+    def generic_visit(self, node):
+        """Default visitor method for all node types."""
+        node_id = f"n{self.node_index + 1}"
+        node_type = node.__class__.__name__
+        node_value = self._get_node_value(node)
+        
+        # Add node to the list
+        self.nodes.append({
+            "id": node_id,
+            "type": node_type,
+            "value": node_value,
+            "children": []
+        })
+        
+        # Add edge from parent to this node
+        parent_id = self.parent_stack[-1]
+        self.edges.append({
+            "source": parent_id,
+            "target": node_id,
+            "type": "child"
+        })
+        
+        # Add node to parent's children
+        parent = next((n for n in self.nodes if n["id"] == parent_id), None)
+        if parent:
+            parent["children"].append(node_id)
+        
+        # Increment node index
+        self.node_index += 1
+        
+        # Push this node as new parent
+        self.parent_stack.append(node_id)
+        
+        # Visit children
+        super().generic_visit(node)
+        
+        # Pop parent stack after visiting children
+        self.parent_stack.pop()
+    
+    def _get_node_value(self, node):
+        """Extract a meaningful value from the node based on its type."""
+        if isinstance(node, ast.FunctionDef):
+            return f"def {node.name}(...)"
+        elif isinstance(node, ast.ClassDef):
+            return f"class {node.name}(...)"
+        elif isinstance(node, ast.Assign):
+            targets = []
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    targets.append(target.id)
+                else:
+                    targets.append("...")
+            return f"{', '.join(targets)} = ..."
+        elif isinstance(node, ast.Import):
+            names = [name.name for name in node.names]
+            return f"import {', '.join(names)}"
+        elif isinstance(node, ast.ImportFrom):
+            return f"from {node.module or '.'} import ..."
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name):
+                return f"{node.func.id}(...)"
+            elif isinstance(node.func, ast.Attribute):
+                return f"...{node.func.attr}(...)"
+            return "call(...)"
+        elif isinstance(node, ast.Return):
+            return "return ..."
+        elif isinstance(node, ast.If):
+            return "if ...:"
+        elif isinstance(node, ast.For):
+            return "for ...:"
+        elif isinstance(node, ast.While):
+            return "while ...:"
+        elif isinstance(node, ast.Try):
+            return "try:"
+        elif isinstance(node, ast.ExceptHandler):
+            return "except:"
+        else:
+            return node.__class__.__name__
+    
+    def get_result(self):
+        """Return the nodes and edges."""
+        return {"nodes": self.nodes, "edges": self.edges}
+
+def parse_python_ast(code):
+    """Parse Python code to generate an AST representation."""
+    try:
+        tree = ast.parse(code)
+        visitor = AstNodeVisitor()
+        visitor.visit(tree)
+        return visitor.get_result()
+    except SyntaxError as e:
+        print(f"Python parsing error: {e}")
+        # Fall back to simple parsing if the code has syntax errors
+        return parse_ast(code, "python")
+
 def parse_ast(code, language):
     """
     Simple parsing to create a basic Abstract Syntax Tree (AST) structure.
-    
-    In a production environment, you would use proper parsers like:
-    - Python: ast module
-    - JavaScript: acorn, esprima
-    - TypeScript: typescript compiler API
-    - etc.
-    
-    This is a simplified version for demonstration.
+    Used as a fallback and for non-Python languages.
     """
     nodes = []
     edges = []
@@ -217,8 +324,11 @@ def convert():
         else:
             converted_code = result.strip()
         
-        # Generate graph data for visualization
-        graph_data = parse_ast(source_code, source_language)
+        # Generate graph data for visualization using the appropriate parser
+        if source_language == "python":
+            graph_data = parse_python_ast(source_code)
+        else:
+            graph_data = parse_ast(source_code, source_language)
         
         execution_time = time.time() - start_time
         

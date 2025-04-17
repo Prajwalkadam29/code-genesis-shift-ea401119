@@ -19,6 +19,10 @@ const LangChain = () => {
           <h2 className="text-xl font-semibold mb-2">About this tool</h2>
           <p className="text-muted-foreground">
             This tool uses a Python backend with LangChain to convert code between different programming languages.
+            The backend uses proper AST (Abstract Syntax Tree) parsing for Python code with the built-in <code>ast</code> module,
+            providing accurate code structure visualization.
+          </p>
+          <p className="text-muted-foreground mt-2">
             If the Python backend is not running, it will fall back to a simpler conversion method.
             To use the full capabilities, start the Python backend with:
           </p>
