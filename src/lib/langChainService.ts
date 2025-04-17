@@ -63,7 +63,12 @@ export class LangChainService {
   }
 
   // For fallback when the Python API is not available
-  fallbackConvert(sourceCode: string, sourceLanguage: CodeLanguage, targetLanguage: CodeLanguage): string {
+  fallbackConvert(
+    sourceCode: string, 
+    sourceLanguage: CodeLanguage, 
+    targetLanguage: CodeLanguage, 
+    options: Record<string, boolean> = {}
+  ): string {
     if (!this.initialized) {
       throw new Error('LangChain service not initialized');
     }

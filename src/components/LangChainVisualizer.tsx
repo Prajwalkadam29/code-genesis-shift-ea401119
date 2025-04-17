@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -190,7 +191,7 @@ const LangChainVisualizer = ({ width = 800, height = 600 }: LangChainVisualizerP
       </CardHeader>
       <CardContent>
         {backendStatus === 'disconnected' && (
-          <Alert variant="warning" className="mb-4">
+          <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Python Backend Not Connected</AlertTitle>
             <AlertDescription>
