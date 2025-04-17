@@ -12,6 +12,7 @@ import Visualizer from "./pages/Visualizer";
 import Documentation from "./pages/Documentation";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import LangChain from "./pages/LangChain";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
               <Route path="/visualizer" element={<Visualizer />} />
               <Route path="/documentation" element={<Documentation />} />
               <Route path="/about" element={<About />} />
+              <Route path="/langchain" element={<LangChain />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
